@@ -42,23 +42,18 @@ def updateIPs(
         updateIP = ipv4 if record["type"] == "A" else ipv6
         if updateIP is None or record["content"] == updateIP: continue
 
-        recordID = record["id"]
-        recordName = record["name"]
-        recordType = record["type"]
+        updateContent = {key : record[key] for key in ["content", "name", "proxied", "type", "comment", "tags", "ttl"]}
+        updateContent["content"] = updateIP
 
         response = requests.put(
-            url = f"https://api.cloudflare.com/client/v4/zones/{zoneID}/dns_records/{recordID}",
+            url = f"https://api.cloudflare.com/client/v4/zones/{zoneID}/dns_records/{record['id']}",
             headers=headers,
-            json={
-                "content": updateIP,
-                "type": recordType,
-                "name": recordName
-            }
+            json=updateContent
         ).json()
 
         if not response["success"]:
             errors = "\n".join("\t" + e["message"] + f" (Code {e['code']})" for e in response["errors"])
-            raise Exception(f"Update for {recordName} (Type: {recordType}) failed: \n" + errors)
+            raise Exception(f"Update for {updateContent['name']} (Type: {updateContent['type']}) failed: \n" + errors)
 
 def determineIPs():
     ipv4 = requests.get("https://api.ipify.org").text
